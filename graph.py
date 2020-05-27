@@ -6,13 +6,13 @@ import warnings
 warnings.filterwarnings("ignore", module="networkx")
 
 # number of nodes
-N = 10000
+N = 100
 # probability that two nodes are connected
 P_CONNECT = 0.05
 # seed ~1% of population as sick
-P_INIT_SICK = 0.01 
+P_INIT_SICK = 0.1 
 # probability of infection from sick node to healthy neighbor
-P_INFECT = 0.001 
+P_INFECT = 0.05 
 # number of iterations/days
 NUM_ITERS = 10
 
@@ -46,6 +46,6 @@ if __name__ == "__main__":
     color_map = init_sick_nodes(G)
     for i in range(NUM_ITERS):
         print("Number of people infected at time " + str(i) + ": " + str(color_map.count('red')))
-        #draw(G, color_map)
+        draw(G, color_map)
         step(G, color_map)
     print("Number of people infected at end: " + str(color_map.count('red')))
