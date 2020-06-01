@@ -6,46 +6,114 @@ import warnings
 warnings.filterwarnings("ignore", module="networkx")
 
 # number of nodes
-N = 100
+N = 10000
 # probability that two nodes are connected
-P_CONNECT = 0.05
+P_CONNECT = 0.005
+
 # seed ~1% of population as sick
-P_INIT_SICK = 0.1 
-# probability of infection from sick node to healthy neighbor
+P_INIT_SICK = 0.01 
+
+# Probability someone is sick tests positive and is isolated
+TEST_POSITIVE = 0.8
+# probability of infection from unidentified sick node to healthy neighbor
 P_INFECT = 0.05 
+# probability of infection from isolated sick node to healthy neighbor
+P_INFECT_ISO = 0.01 
 # number of iterations/days
 NUM_ITERS = 10
 
+# probability that a neighbor is isolated in strategy c
+P_ISOLATE_NBR = 0.25
+
+# ALL NODES THAT HAVE BEEN INFECTED
+SICK_NODES = set()
+
+# NODES THAT HAVE BEEN INFECTED, TESTED POSITIVE, AND ISOLATED
+# TP_NODES is a subset of SICK_NODES
+TP_NODES = set() 
+
 def generate_graph():
-    G = nx.binomial_graph(N, P_CONNECT)
-    return G
+	G = nx.binomial_graph(N, P_CONNECT)
+	return G
 
-def step(G, color_map):
-    for node in G:
-        if color_map[node] == 'red': 
-            for neighbour in G.neighbors(node):
-                if color_map[neighbour] == 'green':
-                    if random.random() < P_INFECT:
-                        color_map[neighbour] = 'red'
+def stepA(G):
+	for node in SICK_NODES:
+		if random.random() < TEST_POSITIVE:
+			TP_NODES.add(node)
 
-def draw(G, color_map):
-    nx.draw(G, node_color = color_map)
-    plt.show()
+	sick_nodes = list(SICK_NODES.copy())
+	for node in sick_nodes:
+		for neighbor in G.neighbors(node):
+			if node in TP_NODES:
+				if random.random() < P_INFECT_ISO:
+					SICK_NODES.add(neighbor)
+			else:
+				if random.random() < P_INFECT:
+					SICK_NODES.add(neighbor)
+
+def stepB(G):
+	for node in SICK_NODES:
+		if random.random() < TEST_POSITIVE:
+			TP_NODES.add(node)
+			# if someone tests positive, isolate all neighbors as well
+			for neighbor in G.neighbors(node):
+				TP_NODES.add(neighbor)
+	
+	sick_nodes = list(SICK_NODES.copy())
+	for node in sick_nodes:
+		for neighbor in G.neighbors(node):
+			if node in TP_NODES:
+				if random.random() < P_INFECT_ISO:
+					SICK_NODES.add(neighbor)
+			else:
+				if random.random() < P_INFECT:
+					SICK_NODES.add(neighbor)
+
+def stepB(G):
+	for node in SICK_NODES:
+		if random.random() < TEST_POSITIVE:
+			TP_NODES.add(node)
+			# if someone tests positive, isolate SOME neighbors as well
+			for neighbor in G.neighbors(node):
+				if random.random() < P_ISOLATE_NBR:
+					TP_NODES.add(neighbor)
+	
+	sick_nodes = list(SICK_NODES.copy())
+	for node in sick_nodes:
+		for neighbor in G.neighbors(node):
+			if node in TP_NODES:
+				if random.random() < P_INFECT_ISO:
+					SICK_NODES.add(neighbor)
+			else:
+				if random.random() < P_INFECT:
+					SICK_NODES.add(neighbor)
+
+def stepD(G):
+	sick_nodes = list(SICK_NODES.copy())
+	for node in sick_nodes:
+		for neighbor in G.neighbors(node):
+			if random.random() < P_INFECT:
+				SICK_NODES.add(neighbor)
+
+def draw(G):
+	color_map = ['green'] * G.number_of_nodes()
+	for n in SICK_NODES:
+		color_map[n] = "red"
+	for n in TP_NODES:
+		color_map[n] = "orange"
+	nx.draw(G, node_color = color_map)
+	plt.show()
 
 def init_sick_nodes(G):
-    color_map = []
-    for node in G:
-        if random.random() < P_INIT_SICK:
-            color_map.append('red')
-        else: 
-            color_map.append('green')
-    return color_map    
+	for node in G:
+		if random.random() < P_INIT_SICK:
+			SICK_NODES.add(node)
 
 if __name__ == "__main__":
-    G = generate_graph()
-    color_map = init_sick_nodes(G)
-    for i in range(NUM_ITERS):
-        print("Number of people infected at time " + str(i) + ": " + str(color_map.count('red')))
-        draw(G, color_map)
-        step(G, color_map)
-    print("Number of people infected at end: " + str(color_map.count('red')))
+	G = generate_graph()
+	init_sick_nodes(G)
+	for i in range(NUM_ITERS):
+		print("Number of people infected at time " + str(i) + ": " + str(len(SICK_NODES)))
+		stepB(G)
+		#draw(G)
+	print("Number of people infected at end: " + str(len(SICK_NODES)))
