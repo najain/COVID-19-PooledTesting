@@ -1,6 +1,7 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 import random
+import sys
 
 import warnings
 warnings.filterwarnings("ignore", module="networkx")
@@ -22,10 +23,10 @@ P_INIT_SICK = 0.01
 
 # Probability someone is sick tests positive and is isolated
 # https://www.acc.org/latest-in-cardiology/journal-scans/2020/05/18/13/42/variation-in-false-negative-rate-of-reverse
-TEST_POSITIVE = 0.7
+TEST_POSITIVE = 0.3
 
 # number of iterations/days
-NUM_ITERS = 10
+NUM_ITERS = 30
 
 # Median Reproductive Number for COVID-19
 # https://wwwnc.cdc.gov/eid/article/26/7/20-0282_article
@@ -52,6 +53,7 @@ def generate_graph():
 	G = nx.binomial_graph(N, P_CONNECT)
 	return G
 
+# Test and Isolate: Whoever gets sick is isolated immediately.
 def stepA(G):
 	for node in SICK_NODES:
 		if random.random() < TEST_POSITIVE:
@@ -67,6 +69,7 @@ def stepA(G):
 				if random.random() < P_INFECT:
 					SICK_NODES.add(neighbor)
 
+# Full Contact Tracing
 def stepB(G):
 	for node in SICK_NODES:
 		if random.random() < TEST_POSITIVE:
@@ -85,7 +88,7 @@ def stepB(G):
 				if random.random() < P_INFECT:
 					SICK_NODES.add(neighbor)
 
-def stepB(G):
+def stepC(G):
 	for node in SICK_NODES:
 		if random.random() < TEST_POSITIVE:
 			ISOLATED_NODES.add(node)
@@ -104,11 +107,23 @@ def stepB(G):
 				if random.random() < P_INFECT:
 					SICK_NODES.add(neighbor)
 
+# No Isolation
 def stepD(G):
 	sick_nodes = list(SICK_NODES.copy())
 	for node in sick_nodes:
 		for neighbor in G.neighbors(node):
 			if random.random() < P_INFECT:
+				SICK_NODES.add(neighbor)
+
+# Everyone Isolated
+def stepE(G):
+	for node in SICK_NODES:
+		ISOLATED_NODES.add(node)
+
+	sick_nodes = list(SICK_NODES.copy())
+	for node in sick_nodes:
+		for neighbor in G.neighbors(node):
+			if random.random() < P_INFECT_ISO:
 				SICK_NODES.add(neighbor)
 
 def draw(G):
@@ -126,10 +141,27 @@ def init_sick_nodes(G):
 			SICK_NODES.add(node)
 
 if __name__ == "__main__":
+	if len(sys.argv) != 2:
+		print("Please enter a valid strategy.")
+		exit()
+
 	G = generate_graph()
 	init_sick_nodes(G)
 	for i in range(NUM_ITERS):
 		print("Number of people infected at time " + str(i) + ": " + str(len(SICK_NODES)))
-		stepB(G)
+		
+		if sys.argv[1] == 'A':
+			stepA(G)
+		elif sys.argv[1] == 'B':
+			stepB(G)
+		elif sys.argv[1] == 'C':
+			stepC(G)
+		elif sys.argv[1] == 'D':
+			stepD(G)
+		elif sys.argv[1] == 'E':
+			stepE(G)
+		else:
+			print("Incorrect strategy entered.")
+			exit()
 		#draw(G)
 	print("Number of people infected at end: " + str(len(SICK_NODES)))
