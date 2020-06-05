@@ -26,7 +26,7 @@ P_INIT_SICK = 0.01
 TEST_POSITIVE = 0.7
 
 # number of iterations/days
-NUM_ITERS = 60
+NUM_ITERS = 30
 
 # Median Reproductive Number for COVID-19
 # https://wwwnc.cdc.gov/eid/article/26/7/20-0282_article
@@ -43,7 +43,7 @@ P_INFECT_ISO = 0.1  * P_INFECT
 P_ISOLATE_NBR = 0.25
 
 # number of tests you can perform in a time step.
-TIMESTEP_TEST_CAPACITY = 1000
+TIMESTEP_TEST_CAPACITY = 100
 
 # ALL NODES THAT HAVE BEEN INFECTED
 SICK_NODES = set()
