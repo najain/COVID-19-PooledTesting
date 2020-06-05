@@ -7,7 +7,7 @@ import warnings
 warnings.filterwarnings("ignore", module="networkx")
 
 # number of nodes
-N = 10000
+N = 1000
 
 # expected number of neighbors per node
 # Chosen to be the median number of people met in a day by an individual:
@@ -23,10 +23,10 @@ P_INIT_SICK = 0.01
 
 # Probability someone is sick tests positive and is isolated
 # https://www.acc.org/latest-in-cardiology/journal-scans/2020/05/18/13/42/variation-in-false-negative-rate-of-reverse
-TEST_POSITIVE = 0.3
+TEST_POSITIVE = 0.7
 
 # number of iterations/days
-NUM_ITERS = 30
+NUM_ITERS = 60
 
 # Median Reproductive Number for COVID-19
 # https://wwwnc.cdc.gov/eid/article/26/7/20-0282_article
@@ -42,6 +42,9 @@ P_INFECT_ISO = 0.1  * P_INFECT
 # probability that a neighbor is isolated in strategy c
 P_ISOLATE_NBR = 0.25
 
+# number of tests you can perform in a time step.
+TIMESTEP_TEST_CAPACITY = 1000
+
 # ALL NODES THAT HAVE BEEN INFECTED
 SICK_NODES = set()
 
@@ -49,15 +52,20 @@ SICK_NODES = set()
 # ISOLATED_NODES is a subset of SICK_NODES
 ISOLATED_NODES = set() 
 
+
 def generate_graph():
-	G = nx.binomial_graph(N, P_CONNECT)
+	G = nx.binomial_graph(N, P_CONNECT, seed=1)
 	return G
 
 # Test and Isolate: Whoever gets sick is isolated immediately.
+# Models universal testing when TIMESTEP_TEST_CAPACITY is equal to number of nodes.
 def stepA(G):
-	for node in SICK_NODES:
-		if random.random() < TEST_POSITIVE:
-			ISOLATED_NODES.add(node)
+	testCount = 0
+	for node in random.sample(list(G),TIMESTEP_TEST_CAPACITY):
+		if testCount < TIMESTEP_TEST_CAPACITY:
+			if (node in SICK_NODES) and random.random() < TEST_POSITIVE:
+				ISOLATED_NODES.add(node)
+			testCount += 1
 
 	sick_nodes = list(SICK_NODES.copy())
 	for node in sick_nodes:
@@ -69,33 +77,17 @@ def stepA(G):
 				if random.random() < P_INFECT:
 					SICK_NODES.add(neighbor)
 
-# Full Contact Tracing
+# Full Contact Tracing: isolate people who test positive as well as all neighbors.
 def stepB(G):
-	for node in SICK_NODES:
-		if random.random() < TEST_POSITIVE:
-			ISOLATED_NODES.add(node)
-			# if someone tests positive, isolate all neighbors as well
-			for neighbor in G.neighbors(node):
-				ISOLATED_NODES.add(neighbor)
-	
-	sick_nodes = list(SICK_NODES.copy())
-	for node in sick_nodes:
-		for neighbor in G.neighbors(node):
-			if node in ISOLATED_NODES:
-				if random.random() < P_INFECT_ISO:
-					SICK_NODES.add(neighbor)
-			else:
-				if random.random() < P_INFECT:
-					SICK_NODES.add(neighbor)
-
-def stepC(G):
-	for node in SICK_NODES:
-		if random.random() < TEST_POSITIVE:
-			ISOLATED_NODES.add(node)
-			# if someone tests positive, isolate SOME neighbors as well
-			for neighbor in G.neighbors(node):
-				if random.random() < P_ISOLATE_NBR:
+	testCount = 0
+	for node in random.sample(list(G),TIMESTEP_TEST_CAPACITY):
+		if testCount < TIMESTEP_TEST_CAPACITY:
+			if (node in SICK_NODES) and random.random() < TEST_POSITIVE:
+				ISOLATED_NODES.add(node)
+				# if someone tests positive, isolate all neighbors as well
+				for neighbor in G.neighbors(node):
 					ISOLATED_NODES.add(neighbor)
+			testCount += 1
 	
 	sick_nodes = list(SICK_NODES.copy())
 	for node in sick_nodes:
@@ -107,7 +99,30 @@ def stepC(G):
 				if random.random() < P_INFECT:
 					SICK_NODES.add(neighbor)
 
-# No Isolation
+# Noisy Contact Tracing: isolate people who test positive and some neighbors.
+def stepC(G):
+	testCount = 0
+	for node in random.sample(list(G),TIMESTEP_TEST_CAPACITY):
+		if testCount < TIMESTEP_TEST_CAPACITY:
+			if (node in SICK_NODES) and random.random() < TEST_POSITIVE:
+				ISOLATED_NODES.add(node)
+				# if someone tests positive, isolate SOME neighbors as well
+				for neighbor in G.neighbors(node):
+					if random.random() < P_ISOLATE_NBR:
+						ISOLATED_NODES.add(neighbor)
+			testCount += 1
+	
+	sick_nodes = list(SICK_NODES.copy())
+	for node in sick_nodes:
+		for neighbor in G.neighbors(node):
+			if node in ISOLATED_NODES:
+				if random.random() < P_INFECT_ISO:
+					SICK_NODES.add(neighbor)
+			else:
+				if random.random() < P_INFECT:
+					SICK_NODES.add(neighbor)
+
+# No Isolation: unmitigated spread of disease.
 def stepD(G):
 	sick_nodes = list(SICK_NODES.copy())
 	for node in sick_nodes:
@@ -115,9 +130,9 @@ def stepD(G):
 			if random.random() < P_INFECT:
 				SICK_NODES.add(neighbor)
 
-# Everyone Isolated
+# Everyone Isolated: models lockdown with some noisy transmission.
 def stepE(G):
-	for node in SICK_NODES:
+	for node in G:
 		ISOLATED_NODES.add(node)
 
 	sick_nodes = list(SICK_NODES.copy())
@@ -131,7 +146,10 @@ def draw(G):
 	for n in SICK_NODES:
 		color_map[n] = "red"
 	for n in ISOLATED_NODES:
-		color_map[n] = "orange"
+		if n in SICK_NODES:
+			color_map[n] = "orange"
+		else:
+			color_map[n] = "yellow"
 	nx.draw(G, node_color = color_map)
 	plt.show()
 
@@ -149,7 +167,8 @@ if __name__ == "__main__":
 	init_sick_nodes(G)
 	for i in range(NUM_ITERS):
 		print("Number of people infected at time " + str(i) + ": " + str(len(SICK_NODES)))
-		
+		print("Number of people isolated at time " + str(i) + ": " + str(len(ISOLATED_NODES)))
+
 		if sys.argv[1] == 'A':
 			stepA(G)
 		elif sys.argv[1] == 'B':
@@ -163,5 +182,5 @@ if __name__ == "__main__":
 		else:
 			print("Incorrect strategy entered.")
 			exit()
-		#draw(G)
+	draw(G)
 	print("Number of people infected at end: " + str(len(SICK_NODES)))
