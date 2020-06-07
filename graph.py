@@ -3,8 +3,10 @@ import matplotlib.pyplot as plt
 import random
 import sys
 import argparse
-
+import numpy as np
 import warnings
+import os 
+
 warnings.filterwarnings("ignore", module="networkx")
 
 # testing and quarantine strategy. Default is unmitigated spread.
@@ -14,11 +16,11 @@ warnings.filterwarnings("ignore", module="networkx")
 # C: Test, Noisy Contact Trace, and Islate:
 # D: Unmitigated Spread
 # E: Complete Lockdown
-# F: Start with Complete Lockdown, then do Pooled testing With 
+# F: Start with Complete Lockdown, then do Pooled testing With Overly Conservative Contact Tracing.
 STRATEGY = "D"
 
 # number of nodes in social network
-N = 1000
+N = 10000
 
 # expected number of neighbors per node
 # Chosen to be the median number of people met in a day by an individual:
@@ -34,10 +36,10 @@ P_INIT_SICK = 0.01
 
 # Probability someone is sick tests positive and is isolated
 # https://www.acc.org/latest-in-cardiology/journal-scans/2020/05/18/13/42/variation-in-false-negative-rate-of-reverse
-TEST_POSITIVE = 0.7
+TEST_POSITIVE = 0.70
 
 # Number of simulation episodes to run
-NUM_SIMULATIONS = 10
+NUM_SIMULATIONS = 100
 
 # number of iterations/days per simulation
 NUM_ITERS = 30
@@ -59,8 +61,19 @@ P_ISOLATE_NBR = 0.25
 # number of tests you can perform in a time step.
 TIMESTEP_TEST_CAPACITY = 10
 
-# Number of people to put in a group for pooled testing.
+# number of people to put in a group for pooled testing.
+# https://www.medrxiv.org/content/10.1101/2020.03.26.20039438v1
 POOL_SIZE = 8
+
+# root location to store the data from the results of the simulations.
+# each simulation will be stored in a subdirectory of this, including the hyperparameters.
+SAVE_DIR = os.path.dirname(os.path.realpath(__file__)) + "/simulations"
+
+# Whether or not to draw some visuals.
+VISUALIZE = False
+
+# Whether or not to draw some visuals.
+VERBOSE = False
 
 # ALL NODES THAT HAVE BEEN INFECTED
 SICK_NODES = set()
@@ -70,7 +83,8 @@ SICK_NODES = set()
 ISOLATED_NODES = set() 
 
 
-def generate_graph():
+
+def generateGraph():
 	G = nx.binomial_graph(N, P_CONNECT, seed=1)
 	return G
 
@@ -91,7 +105,7 @@ def stepB(G):
 		if testCount < TIMESTEP_TEST_CAPACITY:
 			if (node in SICK_NODES) and random.random() < TEST_POSITIVE:
 				ISOLATED_NODES.add(node)
-				# if someone tests positive, isolate all neighbors as well
+				# if someone tests positive, isolate all neighbors as well.
 				for neighbor in G.neighbors(node):
 					ISOLATED_NODES.add(neighbor)
 			testCount += 1
@@ -103,7 +117,7 @@ def stepC(G):
 		if testCount < TIMESTEP_TEST_CAPACITY:
 			if (node in SICK_NODES) and random.random() < TEST_POSITIVE:
 				ISOLATED_NODES.add(node)
-				# if someone tests positive, isolate SOME neighbors as well
+				# if someone tests positive, isolate SOME neighbors as well.
 				for neighbor in G.neighbors(node):
 					if random.random() < P_ISOLATE_NBR:
 						ISOLATED_NODES.add(neighbor)
@@ -111,10 +125,12 @@ def stepC(G):
 
 # No Isolation: unmitigated spread of disease.
 def stepD(G):
+	# Nothing to do regarding testing and isolation.
 	None
 
 # Everyone Isolated: models lockdown with some noisy transmission.
 def stepE(G):
+	# Nothing to do regarding testing and isolation.
 	None
 
 # Initial lockdown, followed by pooled testing with scatter groups.
@@ -170,31 +186,40 @@ def spreadStatistics(G):
 				healthyIsolated += 1
 			else:
 				healthyFree += 1
-	print("Number of healthy people free: " + str(healthyFree))
-	print("Number of infected people free: " + str(sickFree))
-	print("Number of infected people isolated: " + str(sickIsolated))
-	print("Number of healthy people isolated: " + str(healthyIsolated))
+	myLog("Number of healthy people free: " + str(healthyFree))
+	myLog("Number of infected people free: " + str(sickFree))
+	myLog("Number of infected people isolated: " + str(sickIsolated))
+	myLog("Number of healthy people isolated: " + str(healthyIsolated))
+	return (healthyFree, sickFree, sickIsolated, healthyIsolated)
 
 
-def init_sick_nodes(G):
+
+def initSickNodes(G):
 	for node in G:
 		if random.random() < P_INIT_SICK:
 			SICK_NODES.add(node)
 
+def myLog(val):
+	if VERBOSE:
+		print(val)
+
 if __name__ == "__main__":
+	# Process arguments.
 	parser = argparse.ArgumentParser(description='An agent based simulator for COVID-19 using a social network graph.')
 	parser.add_argument('--strategy', help='testing and quarantine strategy', required=False)
+	parser.add_argument('--save_dir', help='directory to save data', required=False)
 	parser.add_argument('--population', type=int, help='number of nodes in the graph', required=False)
 	parser.add_argument('--test_capacity', type=int, help='number of tests that can be performed at each iteration', required=False)
-	parser.add_argument('--pool_size', type=int, help='number of nodes to pool in one test', required=False)
-	parser.add_argument('--iterations', type=int, help='number of time steps to iterate', required=False)
+	parser.add_argument('--pool_size', type=int, help='number of nodes to pool in one test for pooled strategies', required=False)
+	parser.add_argument('--iterations', type=int, help='number of time steps to iterate in a simulation', required=False)
 	parser.add_argument('--num_simulations', type=int, help='number of simulation episodes to run', required=False)
-	parser.add_argument('--r_0', type=float, help='viral reproductive number. Expected number of neighbors that a node should infect over the time duration.',
+	parser.add_argument('--r_0', type=float, help='viral reproductive number. Expected number of neighbors that a node should infect over the time duration',
 	 required=False)
-	parser.add_argument('--test_positive', type=float, help='probability that someone who is sick tests positive',
+	parser.add_argument('--test_positive', type=float, help='probability that someone who is sick will test positive',
 	 required=False)
 	parser.add_argument('--visualize', help='draws the final social network', action='store_true', required=False)
-	parser.add_argument('--p_init_sick', type=float, help='percentage of population to seed as sick at initialization. Decimal value betwen 0 and 1.',
+	parser.add_argument('--verbose', help='adds additional logging', action='store_true', required=False)
+	parser.add_argument('--p_init_sick', type=float, help='proportion of the population to seed as sick at initialization. Decimal value betwen 0 and 1',
 	 required=False)
 	args = parser.parse_args()
 
@@ -208,9 +233,11 @@ if __name__ == "__main__":
 	if args.iterations is not None:
 		NUM_ITERS = args.iterations
 	if args.num_simulations is not None:
-		NUM_SIMULATIONS = args.iterations
+		NUM_SIMULATIONS = args.num_simulations
 	if args.strategy is not None:
 		STRATEGY = args.strategy
+	if args.save_dir is not None:
+		SAVE_DIR = args.save_dir
 	if args.r_0 is not None:
 		R_0 = args.r_0
 	if args.test_positive is not None:
@@ -223,8 +250,22 @@ if __name__ == "__main__":
 			P_INIT_SICK = args.p_init_sick 
 		else:
 			sys.exit("Error: p_init_sick = " + str(args.p_init_sick ) + ". Please provide a p_init_sick probability between 0 and 1.")
+	VISUALIZE = args.visualize
+	VERBOSE = args.verbose
 
-
+	# Handle save_dir creation and validation.
+	if not os.path.exists(SAVE_DIR):
+		os.mkdir(SAVE_DIR)
+	else:
+		myLog("root save_dir already exists: " + SAVE_DIR)
+	# Handle simulation subdirectory creation and validation within save_dir.
+	# Creates a subdirectory with hyperparameter values in its title.
+	simSubPath = "Strategy_" + STRATEGY + "-" + "Pop_" + str(N) + "-" + "NumSims_" + str(NUM_SIMULATIONS) + "-" + "NumIters_" + str(NUM_ITERS) + "-" + "TestCapacity_" + str(TIMESTEP_TEST_CAPACITY)
+	simDirPath = SAVE_DIR + "/" + simSubPath
+	if not os.path.exists(simDirPath):
+		os.mkdir(simDirPath)
+	else:
+		myLog("directory to save simulation already exists: " + simDirPath)
 
 	# Function pointer that specifies what modification should occur at each step based on 
 	# the chosen strategy.
@@ -245,16 +286,24 @@ if __name__ == "__main__":
 		sys.exit("Incorrect strategy entered.")
 		exit()
 
-	
+
+	# Arrays that contain all the final data for each simulation.
+	simsInfected = np.zeros(NUM_SIMULATIONS)
+	simsIsolated = np.zeros(NUM_SIMULATIONS)
+	simsHealthyFree = np.zeros(NUM_SIMULATIONS)
+	simsSickFree = np.zeros(NUM_SIMULATIONS)
+	simsSickIsolated = np.zeros(NUM_SIMULATIONS)
+	simsHealthyIsolated = np.zeros(NUM_SIMULATIONS)
+
 	# Run a number of simulation episodes.
 	for sim in range(NUM_SIMULATIONS):
-		print("Simulation: " + str(sim))
+		myLog("Simulation: " + str(sim))
 
 		# Initialize the grap
-		G = generate_graph()
+		G = generateGraph()
 		SICK_NODES = set()
 		ISOLATED_NODES = set() 
-		init_sick_nodes(G)
+		initSickNodes(G)
 
 		# For certain scenarios, we need full lockdown at initialization.
 		if STRATEGY == "E" or STRATEGY == 'F':
@@ -263,9 +312,9 @@ if __name__ == "__main__":
 
 		# Run all time step iterations.
 		for i in range(NUM_ITERS):
-			print("Time: " + str(i))
-			print("Time: " + str(i) + ": Number of people infected: " + str(len(SICK_NODES)))
-			print("Time: " + str(i) + ": Number of people isolated: " + str(len(ISOLATED_NODES)))
+			myLog("Time: " + str(i))
+			myLog("Time: " + str(i) + ": Number of people infected: " + str(len(SICK_NODES)))
+			myLog("Time: " + str(i) + ": Number of people isolated: " + str(len(ISOLATED_NODES)))
 			spreadStatistics(G)
 			# Run strategy specific logic for time step.
 			stepFunction(G)
@@ -282,7 +331,33 @@ if __name__ == "__main__":
 						if random.random() < P_INFECT:
 							SICK_NODES.add(neighbor)
 
-		# Only draw final graph if argument is specified. 
-		if args.visualize:
-			draw(G)
-		print("Number of people infected at end: " + str(len(SICK_NODES)))
+		# Calculate final statistics for this simulation.
+		stats = spreadStatistics(G)
+		healthyFree = stats[0]
+		sickFree = stats[1]
+		sickIsolated = stats[2]
+		healthyIsolated = stats[3]
+
+		simsInfected[sim] = sickFree + sickIsolated
+		simsIsolated[sim] = healthyIsolated + sickIsolated
+		simsHealthyFree[sim] = healthyFree
+		simsSickFree[sim] = sickFree
+		simsSickIsolated[sim] = sickIsolated
+		simsHealthyIsolated[sim] = healthyIsolated
+		myLog("Number of people infected at end: " + str(simsInfected[sim]))
+
+	# Only draw final graph of the last simulation if argument is specified. 
+	# for visualizing just to get an intuition.
+	if VISUALIZE:
+		draw(G)
+
+	# Once all simulations are finished, save the data.
+	np.save(simDirPath+"/infected", simsInfected)
+	np.save(simDirPath+"/isolated", simsIsolated)
+	np.save(simDirPath+"/healthyFree", simsHealthyFree)
+	np.save(simDirPath+"/sickFree", simsSickFree)
+	np.save(simDirPath+"/sickIsolated", simsSickIsolated)
+	np.save(simDirPath+"/healthyIsolated", simsHealthyIsolated)
+
+
+
