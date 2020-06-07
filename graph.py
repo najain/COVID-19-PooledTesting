@@ -245,6 +245,7 @@ if __name__ == "__main__":
 		sys.exit("Incorrect strategy entered.")
 		exit()
 
+	
 	# Run a number of simulation episodes.
 	for sim in range(NUM_SIMULATIONS):
 		print("Simulation: " + str(sim))
