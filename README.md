@@ -27,7 +27,45 @@ deactivate
 ## Help
 The parameters are documented and can be accessed by running the following command:
 ```
-python graph.py -h
+>python graph.py -h
+
+usage: graph.py [-h] [--strategy STRATEGY] [--save_dir SAVE_DIR]
+                [--population POPULATION] [--test_capacity TEST_CAPACITY]
+                [--pool_size POOL_SIZE] [--iterations ITERATIONS]
+                [--num_simulations NUM_SIMULATIONS] [--r_0 R_0]
+                [--test_positive TEST_POSITIVE] [--visualize] [--verbose]
+                [--p_init_sick P_INIT_SICK]
+
+An agent based simulator for COVID-19 using a social network graph.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --strategy STRATEGY   testing and quarantine strategy
+  --save_dir SAVE_DIR   directory to save data
+  --population POPULATION
+                        number of nodes in the graph
+  --test_capacity TEST_CAPACITY
+                        number of tests that can be performed at each
+                        iteration
+  --pool_size POOL_SIZE
+                        number of nodes to pool in one test for pooled
+                        strategies
+  --iterations ITERATIONS
+                        number of time steps to iterate in a simulation
+  --num_simulations NUM_SIMULATIONS
+                        number of simulation episodes to run
+  --r_0 R_0             viral reproductive number. Expected number of
+                        neighbors that a node should infect over the time
+                        duration
+  --test_positive TEST_POSITIVE
+                        probability that someone who is sick will test
+                        positive
+  --visualize           draws the final social network
+  --verbose             adds additional logging
+  --p_init_sick P_INIT_SICK
+                        proportion of the population to seed as sick at
+                        initialization. Decimal value betwen 0 and 1
+
 ```
 To see default values, look at the constants defined at the top of graph.py.
 
