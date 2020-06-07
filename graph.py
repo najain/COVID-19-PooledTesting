@@ -74,6 +74,9 @@ POOL_SIZE = 8
 # each simulation will be stored in a subdirectory of this, including the hyperparameters.
 SAVE_DIR = os.path.dirname(os.path.realpath(__file__)) + "/simulations"
 
+LOAD_DIR = ""
+
+
 # Whether or not to draw some visuals.
 VISUALIZE = False
 
@@ -191,7 +194,7 @@ def stepG(G):
 				if node in ISOLATED_NODES:
 					ISOLATED_NODES.remove(node)
 
-# Initial lockdown, followed by individual testing with noisy contact tracing.
+# Initial lockdown, followed by individual testing with noisy contact tracing of tested participants.
 # Slowly opens up.
 def stepH(G):
 	testCount = 0
@@ -203,6 +206,8 @@ def stepH(G):
 				for neighbor in G.neighbors(node):
 					if random.random() < P_ISOLATE_NBR:
 						ISOLATED_NODES.add(neighbor)
+			else: 
+				ISOLATED_NODES.remove(node)
 			testCount += 1
 
 # To visualize the graph with colors
@@ -254,15 +259,24 @@ def initSickNodes(G):
 		if random.random() < P_INIT_SICK:
 			SICK_NODES.add(node)
 
+# Wrapper to change amount of information logged. 
+# val is the string that should be logged.
+# overrideVERBOSE allows you to set a boolean to print the information anyways.
 def myLog(val, overrideVERBOSE):
 	if VERBOSE or overrideVERBOSE:
 		print(val)
+
+def plotHistogram(plotData, title):
+	plt.hist(plotData, bins='auto') 
+	plt.title(title) 
+	plt.show()
 
 if __name__ == "__main__":
 	# Process arguments.
 	parser = argparse.ArgumentParser(description='An agent based simulator for COVID-19 using a social network graph.')
 	parser.add_argument('--strategy', help='testing and quarantine strategy', required=False)
 	parser.add_argument('--save_dir', help='directory to save data', required=False)
+	parser.add_argument('--load_dir', help='directory to load data', required=False)
 	parser.add_argument('--population', type=int, help='number of nodes in the graph', required=False)
 	parser.add_argument('--test_capacity', type=int, help='number of tests that can be performed at each iteration', required=False)
 	parser.add_argument('--pool_size', type=int, help='number of nodes to pool in one test for pooled strategies', required=False)
@@ -273,6 +287,7 @@ if __name__ == "__main__":
 	parser.add_argument('--test_positive', type=float, help='probability that someone who is sick will test positive',
 	 required=False)
 	parser.add_argument('--visualize', help='draws the final social network for the last simulation', action='store_true', required=False)
+	parser.add_argument('--plot', help='draws the graphs of the simulations', action='store_true', required=False)
 	parser.add_argument('--verbose', help='adds additional logging', action='store_true', required=False)
 	parser.add_argument('--p_init_sick', type=float, help='proportion of the population to seed as sick at initialization. Decimal value betwen 0 and 1',
 	 required=False)
@@ -293,6 +308,8 @@ if __name__ == "__main__":
 		STRATEGY = args.strategy
 	if args.save_dir is not None:
 		SAVE_DIR = args.save_dir
+	if args.load_dir is not None:
+		LOAD_DIR = args.load_dir
 	if args.r_0 is not None:
 		R_0 = args.r_0
 	if args.test_positive is not None:
@@ -307,6 +324,29 @@ if __name__ == "__main__":
 			sys.exit("Error: p_init_sick = " + str(args.p_init_sick ) + ". Please provide a p_init_sick probability between 0 and 1.")
 	VISUALIZE = args.visualize
 	VERBOSE = args.verbose
+
+	# Handle load_dir validation
+	if args.plot:
+		if not os.path.exists(LOAD_DIR):
+			sys.exit("load_dir does not exist: " + LOAD_DIR)
+		else:
+			now = datetime.datetime.now()
+			myLog(now.strftime("%Y-%m-%d %H:%M:%S") +": Load and plot mode enabled. Loading data to visualize from: " + LOAD_DIR, True)
+			simsInfected = np.load(LOAD_DIR+"/infected.npy")
+			simsIsolated = np.load(LOAD_DIR+"/isolated.npy")
+			simsHealthyFree = np.load(LOAD_DIR+"/healthyFree.npy")
+			simsSickFree = np.load(LOAD_DIR+"/sickFree.npy")
+			simsSickIsolated = np.load(LOAD_DIR+"/sickIsolated.npy")
+			simsHealthyIsolated = np.load(LOAD_DIR+"/healthyIsolated.npy")
+			plotHistogram(simsInfected, "Final Infected Populations")
+			plotHistogram(simsIsolated, "Final Isolated Populations")
+			plotHistogram(simsHealthyFree, "Final Healthy Non-Isolated Populations")
+			plotHistogram(simsHealthyIsolated, "Final Healthy Isolated Populations")
+			plotHistogram(simsSickFree, "Final Sick Non-Isolated Populations")
+			plotHistogram(simsSickIsolated, "Final Sick Isolated Populations")
+			now = datetime.datetime.now()
+			sys.exit(now.strftime("%Y-%m-%d %H:%M:%S") +": Finished plotting graphs.")
+		
 
 	# Handle save_dir creation and validation.
 	if not os.path.exists(SAVE_DIR):
@@ -340,7 +380,7 @@ if __name__ == "__main__":
 	elif STRATEGY == 'G':
 		stepFunction = stepG
 	elif STRATEGY == 'H':
-		stepFunction = stepG
+		stepFunction = stepH
 	else:
 		sys.exit("Incorrect strategy entered.")
 		exit()

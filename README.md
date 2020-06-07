@@ -31,11 +31,11 @@ The parameters are documented and can be accessed by running the following comma
 >python graph.py -h
 
 usage: graph.py [-h] [--strategy STRATEGY] [--save_dir SAVE_DIR]
-                [--population POPULATION] [--test_capacity TEST_CAPACITY]
-                [--pool_size POOL_SIZE] [--iterations ITERATIONS]
-                [--num_simulations NUM_SIMULATIONS] [--r_0 R_0]
-                [--test_positive TEST_POSITIVE] [--visualize] [--verbose]
-                [--p_init_sick P_INIT_SICK]
+                [--load_dir LOAD_DIR] [--population POPULATION]
+                [--test_capacity TEST_CAPACITY] [--pool_size POOL_SIZE]
+                [--iterations ITERATIONS] [--num_simulations NUM_SIMULATIONS]
+                [--r_0 R_0] [--test_positive TEST_POSITIVE] [--visualize]
+                [--plot] [--verbose] [--p_init_sick P_INIT_SICK]
 
 An agent based simulator for COVID-19 using a social network graph.
 
@@ -43,6 +43,7 @@ optional arguments:
   -h, --help            show this help message and exit
   --strategy STRATEGY   testing and quarantine strategy
   --save_dir SAVE_DIR   directory to save data
+  --load_dir LOAD_DIR   directory to load data
   --population POPULATION
                         number of nodes in the graph
   --test_capacity TEST_CAPACITY
@@ -62,6 +63,7 @@ optional arguments:
                         probability that someone who is sick will test
                         positive
   --visualize           draws the final social network for the last simulation
+  --plot                draws the graphs of the simulations
   --verbose             adds additional logging
   --p_init_sick P_INIT_SICK
                         proportion of the population to seed as sick at
