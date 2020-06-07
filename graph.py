@@ -5,7 +5,9 @@ import sys
 import argparse
 import numpy as np
 import warnings
-import os 
+import os
+import datetime
+
 
 warnings.filterwarnings("ignore", module="networkx")
 
@@ -42,7 +44,7 @@ P_INIT_SICK = 0.01
 TEST_POSITIVE = 0.75
 
 # Number of simulation episodes to run
-NUM_SIMULATIONS = 100
+NUM_SIMULATIONS = 50
 
 # number of iterations/days per simulation
 NUM_ITERS = 30
@@ -239,10 +241,10 @@ def spreadStatistics(G):
 				healthyIsolated += 1
 			else:
 				healthyFree += 1
-	myLog("Number of healthy people free: " + str(healthyFree))
-	myLog("Number of infected people free: " + str(sickFree))
-	myLog("Number of infected people isolated: " + str(sickIsolated))
-	myLog("Number of healthy people isolated: " + str(healthyIsolated))
+	myLog("Number of healthy people free: " + str(healthyFree), False)
+	myLog("Number of infected people free: " + str(sickFree), False)
+	myLog("Number of infected people isolated: " + str(sickIsolated), False)
+	myLog("Number of healthy people isolated: " + str(healthyIsolated), False)
 	return (healthyFree, sickFree, sickIsolated, healthyIsolated)
 
 
@@ -252,8 +254,8 @@ def initSickNodes(G):
 		if random.random() < P_INIT_SICK:
 			SICK_NODES.add(node)
 
-def myLog(val):
-	if VERBOSE:
+def myLog(val, overrideVERBOSE):
+	if VERBOSE or overrideVERBOSE:
 		print(val)
 
 if __name__ == "__main__":
@@ -310,7 +312,7 @@ if __name__ == "__main__":
 	if not os.path.exists(SAVE_DIR):
 		os.mkdir(SAVE_DIR)
 	else:
-		myLog("root save_dir already exists: " + SAVE_DIR)
+		myLog("root save_dir already exists: " + SAVE_DIR, False)
 	# Handle simulation subdirectory creation and validation within save_dir.
 	# Creates a subdirectory with hyperparameter values in its title.
 	simSubPath = "Strategy_" + STRATEGY + "-" + "Pop_" + str(N) + "-" + "NumSims_" + str(NUM_SIMULATIONS) + "-" + "NumIters_" + str(NUM_ITERS) + "-" + "TestCapacity_" + str(TIMESTEP_TEST_CAPACITY)
@@ -318,7 +320,7 @@ if __name__ == "__main__":
 	if not os.path.exists(simDirPath):
 		os.mkdir(simDirPath)
 	else:
-		myLog("directory to save simulation already exists: " + simDirPath)
+		myLog("directory to save simulation already exists: " + simDirPath, False)
 
 	# Function pointer that specifies what modification should occur at each step based on 
 	# the chosen strategy.
@@ -352,10 +354,11 @@ if __name__ == "__main__":
 	simsSickIsolated = np.zeros(NUM_SIMULATIONS)
 	simsHealthyIsolated = np.zeros(NUM_SIMULATIONS)
 
-	print("Starting simulations with Strategy: " + STRATEGY)
+	now = datetime.datetime.now()
+	myLog(now.strftime("%Y-%m-%d %H:%M:%S") +": Starting simulations with Strategy: " + STRATEGY, True)
 	# Run a number of simulation episodes.
 	for sim in range(NUM_SIMULATIONS):
-		myLog("Simulation: " + str(sim))
+		myLog("Simulation: " + str(sim), False)
 
 		# Initialize the grap
 		G = generateGraph()
@@ -370,9 +373,9 @@ if __name__ == "__main__":
 
 		# Run all time step iterations.
 		for i in range(NUM_ITERS):
-			myLog("Time: " + str(i))
-			myLog("Time: " + str(i) + ": Number of people infected: " + str(len(SICK_NODES)))
-			myLog("Time: " + str(i) + ": Number of people isolated: " + str(len(ISOLATED_NODES)))
+			myLog("Time: " + str(i), False)
+			myLog("Time: " + str(i) + ": Number of people infected: " + str(len(SICK_NODES)), False)
+			myLog("Time: " + str(i) + ": Number of people isolated: " + str(len(ISOLATED_NODES)), False)
 			spreadStatistics(G)
 			# Run strategy specific logic for time step.
 			stepFunction(G)
@@ -402,7 +405,7 @@ if __name__ == "__main__":
 		simsSickFree[sim] = sickFree
 		simsSickIsolated[sim] = sickIsolated
 		simsHealthyIsolated[sim] = healthyIsolated
-		myLog("Number of people infected at end: " + str(simsInfected[sim]))
+		myLog("Number of people infected at end: " + str(simsInfected[sim]), False)
 
 	# Only draw final graph of the last simulation if argument is specified. 
 	# for visualizing just to get an intuition.
@@ -410,7 +413,8 @@ if __name__ == "__main__":
 		draw(G)
 
 	# Once all simulations are finished, save the data.
-	print("Simulations complete. Saving data to: " + simDirPath)
+	now = datetime.datetime.now()
+	myLog(now.strftime("%Y-%m-%d %H:%M:%S") +": Simulations complete. Saving data to: " + simDirPath, True)
 	np.save(simDirPath+"/infected", simsInfected)
 	np.save(simDirPath+"/isolated", simsIsolated)
 	np.save(simDirPath+"/healthyFree", simsHealthyFree)
