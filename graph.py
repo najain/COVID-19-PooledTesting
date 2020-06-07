@@ -10,14 +10,17 @@ import os
 warnings.filterwarnings("ignore", module="networkx")
 
 # testing and quarantine strategy. Default is unmitigated spread.
-# Options are A, B, C, D, E, F
-# A: Test and Isolate: Whoever tests positive is isolated immediately.
-# B: Test, Full Contact Trace, and Isolate: 
-# C: Test, Noisy Contact Trace, and Isolate:
-# D: Unmitigated Spread
-# E: Complete Lockdown
-# F: Start with Complete Lockdown, then do Pooled testing With Overly Conservative Contact Tracing.
+# Options are as follows:
+# A: Test and Isolate: Whoever tests positive is isolated immediately. No initial lockdown.
+# B: Test, Full Contact Trace, and Isolate. No initial lockdown.
+# C: Test, Noisy Contact Trace, and Isolate. No initial lockdown.
+# D: Unmitigated Spread. No lockdown.
+# E: Complete Lockdown for full duration.
+# F: Start with Complete Lockdown, then do Pooled testing With Overly Conservative Noisy Contact Tracing.
+# G: Start with Complete Lockdown, then do Pooled testing with no Noisy Contact Tracing.
+# H: Start with Complete Lockdown, then do individual testing without pooling, but with Noisy Contact Tracing.
 STRATEGY = "D"
+# Default is unmitigated spread.
 
 # number of nodes in social network
 N = 10000
@@ -90,6 +93,7 @@ def generateGraph():
 
 # Test and Isolate: Whoever tests positive is isolated immediately.
 # Models universal testing when TIMESTEP_TEST_CAPACITY is equal to number of nodes.
+# No initial lockdown.
 def stepA(G):
 	testCount = 0
 	for node in random.sample(list(G),TIMESTEP_TEST_CAPACITY):
@@ -99,6 +103,7 @@ def stepA(G):
 			testCount += 1
 
 # Full Contact Tracing: isolate people who test positive as well as all neighbors.
+# No initial lockdown.
 def stepB(G):
 	testCount = 0
 	for node in random.sample(list(G),TIMESTEP_TEST_CAPACITY):
@@ -111,6 +116,7 @@ def stepB(G):
 			testCount += 1
 
 # Noisy Contact Tracing: isolate people who test positive and some neighbors.
+# No initial lockdown.
 def stepC(G):
 	testCount = 0
 	for node in random.sample(list(G),TIMESTEP_TEST_CAPACITY):
@@ -124,37 +130,84 @@ def stepC(G):
 			testCount += 1
 
 # No Isolation: unmitigated spread of disease.
+# No initial lockdown.
 def stepD(G):
 	# Nothing to do regarding testing and isolation.
 	None
 
 # Everyone Isolated: models lockdown with some noisy transmission.
+# Has full initial lockdown.
 def stepE(G):
 	# Nothing to do regarding testing and isolation.
 	None
 
-# Initial lockdown, followed by pooled testing with scatter groups.
+# Initial lockdown, followed by pooled testing with overly conservative noisy contact tracing.
+# Slowly opens up. The idea is that if a pool tests positive, you lock them all down as well as some subset
+# of their neighbors. But if a pool tests negative, they are removed from isolation.
 def stepF(G):
 	# Number of tests we can do in one iteration.
 	for test in range(TIMESTEP_TEST_CAPACITY):
 		# Boolean on whether we should quarantine the whole group.
 		quarWholeGroup = False
 		poolGroup = random.sample(list(G), POOL_SIZE)
-		# If you find a sick person in your group, quarantine the whole group.
+		# If you find a sick person in your group, quarantine the whole group and their neighbors.
 		for node in poolGroup:
 			if (node in SICK_NODES):
 				quarWholeGroup = True
 		if quarWholeGroup and random.random() < TEST_POSITIVE:
 			for node in poolGroup:
 				ISOLATED_NODES.add(node)
+				# noisy contact trace of positively identified sick node.
 				for neighbor in G.neighbors(node):
 					if random.random() < P_ISOLATE_NBR:
 						ISOLATED_NODES.add(neighbor)
+		# If test is not positive, remove group from isolation.
 		if not quarWholeGroup:
 			for node in poolGroup:
 				if node in ISOLATED_NODES:
 					ISOLATED_NODES.remove(node)
 
+# Initial lockdown, followed by pooled testing with no contact tracing.
+# Slowly opens up. Similar to strategy F, except quarantine actions are only taken on the pool, not
+# on neighbors.
+def stepG(G):
+	# Number of tests we can do in one iteration.
+	for test in range(TIMESTEP_TEST_CAPACITY):
+		# Boolean on whether we should quarantine the whole group.
+		quarWholeGroup = False
+		poolGroup = random.sample(list(G), POOL_SIZE)
+		# If you find a sick person in your group, quarantine the whole group only.
+		for node in poolGroup:
+			if (node in SICK_NODES):
+				quarWholeGroup = True
+		if quarWholeGroup and random.random() < TEST_POSITIVE:
+			for node in poolGroup:
+				ISOLATED_NODES.add(node)
+		# If test is not positive, remove group from isolation.
+		if not quarWholeGroup:
+			for node in poolGroup:
+				if node in ISOLATED_NODES:
+					ISOLATED_NODES.remove(node)
+
+# Initial lockdown, followed by individual testing with noisy contact tracing.
+# Slowly opens up.
+def stepH(G):
+	testCount = 0
+	for node in random.sample(list(G),TIMESTEP_TEST_CAPACITY):
+		if testCount < TIMESTEP_TEST_CAPACITY:
+			if (node in SICK_NODES) and random.random() < TEST_POSITIVE:
+				ISOLATED_NODES.add(node)
+				# noisy contact trace of positively identified sick node.
+				for neighbor in G.neighbors(node):
+					if random.random() < P_ISOLATE_NBR:
+						ISOLATED_NODES.add(neighbor)
+			testCount += 1
+
+# To visualize the graph with colors
+# Green is healthy and unisolated
+# Red is sick and unisolated
+# Yellow if healthy and isolated
+# Orange is sick and isolated
 def draw(G):
 	color_map = ['green'] * G.number_of_nodes()
 	for n in SICK_NODES:
@@ -282,6 +335,10 @@ if __name__ == "__main__":
 		stepFunction = stepE
 	elif STRATEGY == 'F':
 		stepFunction = stepF
+	elif STRATEGY == 'G':
+		stepFunction = stepG
+	elif STRATEGY == 'H':
+		stepFunction = stepG
 	else:
 		sys.exit("Incorrect strategy entered.")
 		exit()
@@ -307,7 +364,7 @@ if __name__ == "__main__":
 		initSickNodes(G)
 
 		# For certain scenarios, we need full lockdown at initialization.
-		if STRATEGY == "E" or STRATEGY == 'F':
+		if STRATEGY == "E" or STRATEGY == 'F' or STRATEGY == 'G' or STRATEGY == 'H':
 			for node in G:
 				ISOLATED_NODES.add(node)
 

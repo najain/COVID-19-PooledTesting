@@ -71,12 +71,14 @@ optional arguments:
 To see default values, look at the constants defined at the top of graph.py.
 
 ## Strategies
-There are 6 different strategies implemented to model different scenarios. They can be specified using the --strategy argument with one of the following capital letter choices:
+There are several different strategies implemented to model different scenarios. They can be specified using the --strategy argument with one of the following capital letter choices:
 
-* A: Test and Isolate: Whoever tests positive is isolated immediately.
-* B: Test, Full Contact Trace, and Isolate: Whoever tests positive is isolated and has all of their neighbors isolated as well.
-* C: Test, Noisy Contact Trace, and Isolate: Whoever tests positive is isolated and has a subset of their neighbors isolated as well.
-* D: Unmitigated Spread
-* E: Complete Lockdown
-* F: Start with Complete Lockdown, then do Pooled testing With Overly Conservative Contact Tracing.
+* A: Test and Isolate: Whoever tests positive is isolated immediately. No initial lockdown.
+* B: Test, Full Contact Trace, and Isolate. No initial lockdown.
+* C: Test, Noisy Contact Trace, and Isolate. No initial lockdown.
+* D: Unmitigated Spread. No lockdown.
+* E: Complete Lockdown for full duration.
+* F: Start with Complete Lockdown, then do Pooled testing With Overly Conservative Noisy Contact Tracing.
+* G: Start with Complete Lockdown, then do Pooled testing with no Noisy Contact Tracing.
+* H: Start with Complete Lockdown, then do individual testing without pooling, but with Noisy Contact Tracing.
 
