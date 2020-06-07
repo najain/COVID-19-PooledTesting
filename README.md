@@ -60,7 +60,7 @@ optional arguments:
   --test_positive TEST_POSITIVE
                         probability that someone who is sick will test
                         positive
-  --visualize           draws the final social network
+  --visualize           draws the final social network for the last simulation
   --verbose             adds additional logging
   --p_init_sick P_INIT_SICK
                         proportion of the population to seed as sick at
