@@ -36,7 +36,7 @@ P_INIT_SICK = 0.01
 
 # Probability someone is sick tests positive and is isolated
 # https://www.acc.org/latest-in-cardiology/journal-scans/2020/05/18/13/42/variation-in-false-negative-rate-of-reverse
-TEST_POSITIVE = 0.70
+TEST_POSITIVE = 0.75
 
 # Number of simulation episodes to run
 NUM_SIMULATIONS = 100
@@ -59,7 +59,7 @@ P_INFECT_ISO = 0.1  * P_INFECT
 P_ISOLATE_NBR = 0.25
 
 # number of tests you can perform in a time step.
-TIMESTEP_TEST_CAPACITY = 10
+TIMESTEP_TEST_CAPACITY = 100
 
 # number of people to put in a group for pooled testing.
 # https://www.medrxiv.org/content/10.1101/2020.03.26.20039438v1
