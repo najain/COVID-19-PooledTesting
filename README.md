@@ -1,6 +1,7 @@
 # README
 
 Nishant Jain, Amay Aggarwal, Andrew Hwang
+
 Stanford University
 
 ## Introduction
