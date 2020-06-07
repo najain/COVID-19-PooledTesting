@@ -207,7 +207,8 @@ def stepH(G):
 					if random.random() < P_ISOLATE_NBR:
 						ISOLATED_NODES.add(neighbor)
 			else: 
-				ISOLATED_NODES.remove(node)
+				if node in ISOLATED_NODES:
+					ISOLATED_NODES.remove(node)
 			testCount += 1
 
 # To visualize the graph with colors
