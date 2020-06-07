@@ -13,7 +13,7 @@ warnings.filterwarnings("ignore", module="networkx")
 # Options are A, B, C, D, E, F
 # A: Test and Isolate: Whoever tests positive is isolated immediately.
 # B: Test, Full Contact Trace, and Isolate: 
-# C: Test, Noisy Contact Trace, and Islate:
+# C: Test, Noisy Contact Trace, and Isolate:
 # D: Unmitigated Spread
 # E: Complete Lockdown
 # F: Start with Complete Lockdown, then do Pooled testing With Overly Conservative Contact Tracing.
@@ -217,7 +217,7 @@ if __name__ == "__main__":
 	 required=False)
 	parser.add_argument('--test_positive', type=float, help='probability that someone who is sick will test positive',
 	 required=False)
-	parser.add_argument('--visualize', help='draws the final social network', action='store_true', required=False)
+	parser.add_argument('--visualize', help='draws the final social network for the last simulation', action='store_true', required=False)
 	parser.add_argument('--verbose', help='adds additional logging', action='store_true', required=False)
 	parser.add_argument('--p_init_sick', type=float, help='proportion of the population to seed as sick at initialization. Decimal value betwen 0 and 1',
 	 required=False)
@@ -295,7 +295,7 @@ if __name__ == "__main__":
 	simsSickIsolated = np.zeros(NUM_SIMULATIONS)
 	simsHealthyIsolated = np.zeros(NUM_SIMULATIONS)
 
-	print("Starting simulations.")
+	print("Starting simulations with Strategy: " + STRATEGY)
 	# Run a number of simulation episodes.
 	for sim in range(NUM_SIMULATIONS):
 		myLog("Simulation: " + str(sim))
