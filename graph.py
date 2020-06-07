@@ -74,7 +74,7 @@ POOL_SIZE = 8
 # each simulation will be stored in a subdirectory of this, including the hyperparameters.
 SAVE_DIR = os.path.dirname(os.path.realpath(__file__)) + "/simulations"
 
-LOAD_DIR = ""
+LOAD_DIR = os.path.dirname(os.path.realpath(__file__)) + "/simulations"
 
 
 # Whether or not to draw some visuals.
@@ -276,7 +276,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description='An agent based simulator for COVID-19 using a social network graph.')
 	parser.add_argument('--strategy', help='testing and quarantine strategy', required=False)
 	parser.add_argument('--save_dir', help='directory to save data', required=False)
-	parser.add_argument('--load_dir', help='directory to load data', required=False)
+	parser.add_argument('--load_dir', help='directory to load data. Use --plot with this', required=False)
 	parser.add_argument('--population', type=int, help='number of nodes in the graph', required=False)
 	parser.add_argument('--test_capacity', type=int, help='number of tests that can be performed at each iteration', required=False)
 	parser.add_argument('--pool_size', type=int, help='number of nodes to pool in one test for pooled strategies', required=False)
@@ -287,7 +287,7 @@ if __name__ == "__main__":
 	parser.add_argument('--test_positive', type=float, help='probability that someone who is sick will test positive',
 	 required=False)
 	parser.add_argument('--visualize', help='draws the final social network for the last simulation', action='store_true', required=False)
-	parser.add_argument('--plot', help='draws the graphs of the simulations', action='store_true', required=False)
+	parser.add_argument('--plot', help='draws the graphs of the simulations. Set --load_dir to provide directory to load from', action='store_true', required=False)
 	parser.add_argument('--verbose', help='adds additional logging', action='store_true', required=False)
 	parser.add_argument('--p_init_sick', type=float, help='proportion of the population to seed as sick at initialization. Decimal value betwen 0 and 1',
 	 required=False)

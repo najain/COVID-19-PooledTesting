@@ -43,7 +43,7 @@ optional arguments:
   -h, --help            show this help message and exit
   --strategy STRATEGY   testing and quarantine strategy
   --save_dir SAVE_DIR   directory to save data
-  --load_dir LOAD_DIR   directory to load data
+  --load_dir LOAD_DIR   directory to load data. Use --plot with this
   --population POPULATION
                         number of nodes in the graph
   --test_capacity TEST_CAPACITY
@@ -63,7 +63,8 @@ optional arguments:
                         probability that someone who is sick will test
                         positive
   --visualize           draws the final social network for the last simulation
-  --plot                draws the graphs of the simulations
+  --plot                draws the graphs of the simulations. Set --load_dir to
+                        provide directory to load from
   --verbose             adds additional logging
   --p_init_sick P_INIT_SICK
                         proportion of the population to seed as sick at
