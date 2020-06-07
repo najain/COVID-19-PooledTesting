@@ -9,6 +9,12 @@ warnings.filterwarnings("ignore", module="networkx")
 
 # testing and quarantine strategy. Default is unmitigated spread.
 # Options are A, B, C, D, E, F
+# A: Test and Isolate: Whoever tests positive is isolated immediately.
+# B: Test, Full Contact Trace, and Isolate: 
+# C: Test, Noisy Contact Trace, and Islate:
+# D: Unmitigated Spread
+# E: Complete Lockdown
+# F: Start with Complete Lockdown, then do Pooled testing With 
 STRATEGY = "D"
 
 # number of nodes in social network
@@ -30,7 +36,10 @@ P_INIT_SICK = 0.01
 # https://www.acc.org/latest-in-cardiology/journal-scans/2020/05/18/13/42/variation-in-false-negative-rate-of-reverse
 TEST_POSITIVE = 0.7
 
-# number of iterations/days
+# Number of simulation episodes to run
+NUM_SIMULATIONS = 1
+
+# number of iterations/days per simulation
 NUM_ITERS = 30
 
 # Median Reproductive Number for COVID-19
@@ -75,16 +84,6 @@ def stepA(G):
 				ISOLATED_NODES.add(node)
 			testCount += 1
 
-	sick_nodes = list(SICK_NODES.copy())
-	for node in sick_nodes:
-		for neighbor in G.neighbors(node):
-			if node in ISOLATED_NODES:
-				if random.random() < P_INFECT_ISO:
-					SICK_NODES.add(neighbor)
-			else:
-				if random.random() < P_INFECT:
-					SICK_NODES.add(neighbor)
-
 # Full Contact Tracing: isolate people who test positive as well as all neighbors.
 def stepB(G):
 	testCount = 0
@@ -96,16 +95,6 @@ def stepB(G):
 				for neighbor in G.neighbors(node):
 					ISOLATED_NODES.add(neighbor)
 			testCount += 1
-	
-	sick_nodes = list(SICK_NODES.copy())
-	for node in sick_nodes:
-		for neighbor in G.neighbors(node):
-			if node in ISOLATED_NODES:
-				if random.random() < P_INFECT_ISO:
-					SICK_NODES.add(neighbor)
-			else:
-				if random.random() < P_INFECT:
-					SICK_NODES.add(neighbor)
 
 # Noisy Contact Tracing: isolate people who test positive and some neighbors.
 def stepC(G):
@@ -119,38 +108,23 @@ def stepC(G):
 					if random.random() < P_ISOLATE_NBR:
 						ISOLATED_NODES.add(neighbor)
 			testCount += 1
-	
-	sick_nodes = list(SICK_NODES.copy())
-	for node in sick_nodes:
-		for neighbor in G.neighbors(node):
-			if node in ISOLATED_NODES:
-				if random.random() < P_INFECT_ISO:
-					SICK_NODES.add(neighbor)
-			else:
-				if random.random() < P_INFECT:
-					SICK_NODES.add(neighbor)
 
 # No Isolation: unmitigated spread of disease.
 def stepD(G):
-	sick_nodes = list(SICK_NODES.copy())
-	for node in sick_nodes:
-		for neighbor in G.neighbors(node):
-			if random.random() < P_INFECT:
-				SICK_NODES.add(neighbor)
+	None
 
 # Everyone Isolated: models lockdown with some noisy transmission.
 def stepE(G):
-	sick_nodes = list(SICK_NODES.copy())
-	for node in sick_nodes:
-		for neighbor in G.neighbors(node):
-			if random.random() < P_INFECT_ISO:
-				SICK_NODES.add(neighbor)
+	None
 
-# Pooled testing with scatter groups.
+# Initial lockdown, followed by pooled testing with scatter groups.
 def stepF(G):
+	# Number of tests we can do in one iteration.
 	for test in range(TIMESTEP_TEST_CAPACITY):
+		# Boolean on whether we should quarantine the whole group.
 		quarWholeGroup = False
 		poolGroup = random.sample(list(G), POOL_SIZE)
+		# If you find a sick person in your group, quarantine the whole group.
 		for node in poolGroup:
 			if (node in SICK_NODES):
 				quarWholeGroup = True
@@ -164,16 +138,6 @@ def stepF(G):
 			for node in poolGroup:
 				if node in ISOLATED_NODES:
 					ISOLATED_NODES.remove(node)
-
-	sick_nodes = list(SICK_NODES.copy())
-	for node in sick_nodes:
-		for neighbor in G.neighbors(node):
-			if node in ISOLATED_NODES:
-				if random.random() < P_INFECT_ISO:
-					SICK_NODES.add(neighbor)
-			else:
-				if random.random() < P_INFECT:
-					SICK_NODES.add(neighbor)
 
 def draw(G):
 	color_map = ['green'] * G.number_of_nodes()
@@ -278,22 +242,43 @@ if __name__ == "__main__":
 		sys.exit("Incorrect strategy entered.")
 		exit()
 
-	G = generate_graph()
-	init_sick_nodes(G)
+	# Run a number of simulation episodes.
+	for sim in range(NUM_SIMULATIONS):
+		print("Simulation: " + str(sim))
 
-	# For certain scenarios, we need full lockdown at initialization.
-	if STRATEGY == "E" or STRATEGY == 'F':
-		for node in G:
-			ISOLATED_NODES.add(node)
+		# Initialize the grap
+		G = generate_graph()
+		SICK_NODES = set()
+		ISOLATED_NODES = set() 
+		init_sick_nodes(G)
 
-	for i in range(NUM_ITERS):
-		print("Time: " + str(i))
-		print("Time: " + str(i) + ": Number of people infected: " + str(len(SICK_NODES)))
-		print("Time: " + str(i) + ": Number of people isolated: " + str(len(ISOLATED_NODES)))
-		spreadStatistics(G)
-		stepFunction(G)
+		# For certain scenarios, we need full lockdown at initialization.
+		if STRATEGY == "E" or STRATEGY == 'F':
+			for node in G:
+				ISOLATED_NODES.add(node)
 
-	# Only draw final graph if argument is specified. 
-	if args.visualize:
-		draw(G)
-	print("Number of people infected at end: " + str(len(SICK_NODES)))
+		# Run all time step iterations.
+		for i in range(NUM_ITERS):
+			print("Time: " + str(i))
+			print("Time: " + str(i) + ": Number of people infected: " + str(len(SICK_NODES)))
+			print("Time: " + str(i) + ": Number of people isolated: " + str(len(ISOLATED_NODES)))
+			spreadStatistics(G)
+			# Run strategy specific logic for time step.
+			stepFunction(G)
+
+			# Spread disease based on stage of model.
+			# Sick, unisolated people spread at a high
+			sick_nodes = list(SICK_NODES.copy())
+			for node in sick_nodes:
+				for neighbor in G.neighbors(node):
+					if node in ISOLATED_NODES:
+						if random.random() < P_INFECT_ISO:
+							SICK_NODES.add(neighbor)
+					else:
+						if random.random() < P_INFECT:
+							SICK_NODES.add(neighbor)
+
+		# Only draw final graph if argument is specified. 
+		if args.visualize:
+			draw(G)
+		print("Number of people infected at end: " + str(len(SICK_NODES)))
