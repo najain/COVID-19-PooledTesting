@@ -295,6 +295,7 @@ if __name__ == "__main__":
 	simsSickIsolated = np.zeros(NUM_SIMULATIONS)
 	simsHealthyIsolated = np.zeros(NUM_SIMULATIONS)
 
+	print("Starting simulations.")
 	# Run a number of simulation episodes.
 	for sim in range(NUM_SIMULATIONS):
 		myLog("Simulation: " + str(sim))
@@ -352,6 +353,7 @@ if __name__ == "__main__":
 		draw(G)
 
 	# Once all simulations are finished, save the data.
+	print("Simulations complete. Saving data to: " + simDirPath)
 	np.save(simDirPath+"/infected", simsInfected)
 	np.save(simDirPath+"/isolated", simsIsolated)
 	np.save(simDirPath+"/healthyFree", simsHealthyFree)
