@@ -65,7 +65,7 @@ def generate_graph():
 	G = nx.binomial_graph(N, P_CONNECT, seed=1)
 	return G
 
-# Test and Isolate: Whoever gets sick is isolated immediately.
+# Test and Isolate: Whoever tests positive is isolated immediately.
 # Models universal testing when TIMESTEP_TEST_CAPACITY is equal to number of nodes.
 def stepA(G):
 	testCount = 0
@@ -293,6 +293,7 @@ if __name__ == "__main__":
 		spreadStatistics(G)
 		stepFunction(G)
 
+	# Only draw final graph if argument is specified. 
 	if args.visualize:
 		draw(G)
 	print("Number of people infected at end: " + str(len(SICK_NODES)))
