@@ -37,7 +37,7 @@ P_INIT_SICK = 0.01
 TEST_POSITIVE = 0.7
 
 # Number of simulation episodes to run
-NUM_SIMULATIONS = 1
+NUM_SIMULATIONS = 10
 
 # number of iterations/days per simulation
 NUM_ITERS = 30
@@ -188,6 +188,7 @@ if __name__ == "__main__":
 	parser.add_argument('--test_capacity', type=int, help='number of tests that can be performed at each iteration', required=False)
 	parser.add_argument('--pool_size', type=int, help='number of nodes to pool in one test', required=False)
 	parser.add_argument('--iterations', type=int, help='number of time steps to iterate', required=False)
+	parser.add_argument('--num_simulations', type=int, help='number of simulation episodes to run', required=False)
 	parser.add_argument('--r_0', type=float, help='viral reproductive number. Expected number of neighbors that a node should infect over the time duration.',
 	 required=False)
 	parser.add_argument('--test_positive', type=float, help='probability that someone who is sick tests positive',
@@ -206,6 +207,8 @@ if __name__ == "__main__":
 		POOL_SIZE = args.pool_size
 	if args.iterations is not None:
 		NUM_ITERS = args.iterations
+	if args.num_simulations is not None:
+		NUM_SIMULATIONS = args.iterations
 	if args.strategy is not None:
 		STRATEGY = args.strategy
 	if args.r_0 is not None:
