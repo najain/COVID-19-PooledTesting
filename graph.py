@@ -44,7 +44,7 @@ P_INIT_SICK = 0.01
 TEST_POSITIVE = 0.75
 
 # Number of simulation episodes to run
-NUM_SIMULATIONS = 50
+NUM_SIMULATIONS = 100
 
 # number of iterations/days per simulation
 NUM_ITERS = 30
